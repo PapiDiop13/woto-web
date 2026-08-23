@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/* ─── Palette WOTO — identique a woto-app/src/constants/colors.js ─── */
+:root {
+  --background: #FFFFFF;
+  --surface: #F7F8F8;
+  --surface-alt: #EFF1F1;
+  --border-c: #E3E6E6;
+
+  --text: #0F1417;
+  --text-muted: #5C6A72;
+  --text-faint: #8E9BA3;
+
+  --primary: #0E8C6A;
+  --primary-soft: #E6F4EF;
+  --primary-dark: #0A6B51;
+
+  --warning: #C77700;
+  --warning-soft: #FCF1E1;
+  --danger: #C0392B;
+  --danger-soft: #FBEAE8;
+  --info: #1F6FB2;
+  --info-soft: #E8F1F8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-border-c: var(--border-c);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-dark: var(--primary-dark);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+/* Scrollbar discrete sur les rails horizontaux (filtres, carrousels) */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fadeUp .6s ease-out both; }
+
+.input {
+  width: 100%;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-c);
+  padding: 0 0.875rem;
+  font-size: 0.875rem;
+  background: white;
+}
+.input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
