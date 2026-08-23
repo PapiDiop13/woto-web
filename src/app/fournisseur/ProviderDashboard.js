@@ -1,8 +1,9 @@
 'use client';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage, auth } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { storage, auth, db } from '@/lib/firebase';
 import { useProviderVehicles } from '@/hooks/useVehicles';
 import { useProviderBookings } from '@/hooks/useBookings';
 import {
@@ -19,11 +20,27 @@ const REQUESTS_PAGE_SIZE = 8;
 
 export default function ProviderDashboard({ providerId, userProfile }) {
   const [tab, setTab] = useState('requests');
+  const [fleetFilter, setFleetFilter] = useState('all'); // all | active | paused
   const { vehicles, isLoading: vLoading } = useProviderVehicles(providerId);
   const { bookings, isLoading: bLoading } = useProviderBookings(providerId);
   const [showAdd, setShowAdd] = useState(false);
   const [reqPage, setReqPage] = useState(1);
   const [fleetPage, setFleetPage] = useState(1);
+  const [provider, setProvider] = useState(null);
+
+  // ─── Écoute en temps réel du document boutique (providers/{id}) ───
+  // Même source que la fiche publique côté mobile (ProviderProfileScreen) :
+  // bannière, logo, nom, note, ville, téléphone. Sans ça, la page fournisseur
+  // web restait un simple tableau de bord sans identité de marque.
+  useEffect(() => {
+    if (!providerId) return undefined;
+    const unsub = onSnapshot(
+      doc(db, 'providers', providerId),
+      (snap) => setProvider(snap.exists() ? { id: snap.id, ...snap.data() } : null),
+      () => setProvider(null)
+    );
+    return unsub;
+  }, [providerId]);
 
   const pending = bookings.filter((b) => b.status === 'pending_approval');
 
@@ -34,33 +51,86 @@ export default function ProviderDashboard({ providerId, userProfile }) {
   const reqTotalPages = Math.max(1, Math.ceil(sortedBookings.length / REQUESTS_PAGE_SIZE));
   const reqPageItems = sortedBookings.slice((reqPage - 1) * REQUESTS_PAGE_SIZE, reqPage * REQUESTS_PAGE_SIZE);
 
-  const fleetTotalPages = Math.max(1, Math.ceil(vehicles.length / FLEET_PAGE_SIZE));
-  const fleetPageItems = vehicles.slice((fleetPage - 1) * FLEET_PAGE_SIZE, fleetPage * FLEET_PAGE_SIZE);
+  const activeCount = vehicles.filter((v) => v.status === 'active').length;
+  const pausedCount = vehicles.filter((v) => v.status !== 'active').length;
+  const filteredVehicles = useMemo(
+    () => (fleetFilter === 'all' ? vehicles : vehicles.filter((v) => (fleetFilter === 'active' ? v.status === 'active' : v.status !== 'active'))),
+    [vehicles, fleetFilter]
+  );
+  const fleetTotalPages = Math.max(1, Math.ceil(filteredVehicles.length / FLEET_PAGE_SIZE));
+  const fleetPageItems = filteredVehicles.slice((fleetPage - 1) * FLEET_PAGE_SIZE, fleetPage * FLEET_PAGE_SIZE);
 
   const switchTab = (id) => {
     setTab(id);
   };
 
+  const displayName = provider?.name || userProfile?.displayName || 'Fournisseur WOTO';
+  const completedRentals = provider?.completedRentals ?? vehicles.reduce((sum, v) => sum + (v.completedRentals || 0), 0);
+  const isVerified = provider?.status === 'active' || provider?.status === 'trusted';
+
   return (
-    <Section className="py-8 sm:py-12">
-      <div className="mx-auto max-w-6xl">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-text tracking-tight">Espace fournisseur</h1>
-            <p className="text-text-muted text-sm mt-1">{vehicles.length} véhicule{vehicles.length !== 1 ? 's' : ''} · {pending.length} demande{pending.length !== 1 ? 's' : ''} en attente</p>
+    <div>
+      {/* ─── Bannière + identité — même structure que la fiche fournisseur mobile ─── */}
+      <div className="relative h-32 sm:h-44 bg-surface-alt">
+        {provider?.bannerUrl ? (
+          <Image src={provider.bannerUrl} alt="" fill className="object-cover" priority sizes="100vw" />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary-dark" />
+        )}
+      </div>
+
+      <Section className="pb-8 sm:pb-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex items-end gap-4 -mt-10 sm:-mt-12">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-4 border-background bg-primary overflow-hidden flex items-center justify-center shrink-0 shadow-md relative">
+              {provider?.logoUrl ? (
+                <Image src={provider.logoUrl} alt="" fill className="object-cover" sizes="96px" />
+              ) : (
+                <span className="text-white text-2xl sm:text-3xl font-extrabold">{displayName.charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0 pb-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-text tracking-tight truncate">{displayName}</h1>
+                {isVerified && <span className="text-primary text-lg" title="Vérifié">✓</span>}
+              </div>
+              <div className="flex items-center gap-3 flex-wrap mt-0.5">
+                {provider?.rating?.count > 0 && (
+                  <span className="text-sm text-text-muted">★ {provider.rating.avg} ({provider.rating.count})</span>
+                )}
+                {!!provider?.city && <span className="text-sm text-text-muted">{provider.city}</span>}
+                {!!provider?.phone && <span className="text-sm text-text-muted">{provider.phone}</span>}
+              </div>
+            </div>
+            <Button onClick={() => setShowAdd(true)} className="shrink-0 hidden sm:inline-flex">+ Ajouter un véhicule</Button>
           </div>
-          <Button onClick={() => setShowAdd(true)}>+ Ajouter un véhicule</Button>
-        </div>
+          <Button onClick={() => setShowAdd(true)} className="w-full mt-4 sm:hidden">+ Ajouter un véhicule</Button>
 
-        <div className="flex gap-2 mt-8 border-b border-border-c">
-          {[['requests', `Demandes (${bookings.length})`], ['fleet', `Ma flotte (${vehicles.length})`]].map(([id, label]) => (
-            <button key={id} onClick={() => switchTab(id)} className={`px-4 py-3 text-sm font-semibold border-b-2 -mb-px transition ${tab === id ? 'border-primary text-primary-dark' : 'border-transparent text-text-muted hover:text-text'}`}>
-              {label}
-            </button>
-          ))}
-        </div>
+          {/* ─── Stats ─── */}
+          <div className="grid grid-cols-3 gap-3 mt-6 rounded-2xl bg-surface p-4 sm:p-5">
+            <div className="text-center">
+              <p className="text-lg sm:text-xl font-extrabold text-text">{vehicles.length}</p>
+              <p className="text-[11px] font-semibold text-text-faint uppercase tracking-wide mt-0.5">Véhicule{vehicles.length !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="text-center border-x border-border-c">
+              <p className="text-lg sm:text-xl font-extrabold text-text">{completedRentals}</p>
+              <p className="text-[11px] font-semibold text-text-faint uppercase tracking-wide mt-0.5">Locations</p>
+            </div>
+            <div className="text-center">
+              <p className="text-lg sm:text-xl font-extrabold text-text">{pending.length}</p>
+              <p className="text-[11px] font-semibold text-text-faint uppercase tracking-wide mt-0.5">En attente</p>
+            </div>
+          </div>
 
-        {tab === 'requests' && (
+          <div className="flex gap-2 mt-8 border-b border-border-c">
+            {[['requests', `Demandes (${bookings.length})`], ['fleet', `Ma flotte (${vehicles.length})`]].map(([id, label]) => (
+              <button key={id} onClick={() => switchTab(id)} className={`px-4 py-3 text-sm font-semibold border-b-2 -mb-px transition ${tab === id ? 'border-primary text-primary-dark' : 'border-transparent text-text-muted hover:text-text'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'requests' && (
           <div className="mt-6">
             <div className="space-y-3">
               {bLoading ? <p className="text-text-muted text-sm">Chargement…</p> : bookings.length === 0 ? (
@@ -77,9 +147,22 @@ export default function ProviderDashboard({ providerId, userProfile }) {
 
         {tab === 'fleet' && (
           <div className="mt-6">
+            <div className="flex gap-2 mb-4">
+              {[['all', `Tout (${vehicles.length})`], ['active', `Actif (${activeCount})`], ['paused', `En pause (${pausedCount})`]].map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => { setFleetFilter(id); setFleetPage(1); }}
+                  className={`h-9 px-4 rounded-full text-sm font-semibold border transition ${fleetFilter === id ? 'bg-primary-soft border-primary text-primary-dark' : 'border-border-c text-text-muted hover:text-text hover:border-primary/60'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {vLoading ? <p className="text-text-muted text-sm col-span-full">Chargement…</p> : vehicles.length === 0 ? (
-                <Card className="p-8 text-center text-text-muted col-span-full">Aucun véhicule publié. Ajoutez-en un pour commencer à recevoir des demandes.</Card>
+              {vLoading ? <p className="text-text-muted text-sm col-span-full">Chargement…</p> : filteredVehicles.length === 0 ? (
+                <Card className="p-8 text-center text-text-muted col-span-full">
+                  {vehicles.length === 0 ? 'Aucun véhicule publié. Ajoutez-en un pour commencer à recevoir des demandes.' : 'Aucun véhicule dans cette catégorie.'}
+                </Card>
               ) : fleetPageItems.map((v) => <FleetCard key={v.id} vehicle={v} />)}
             </div>
             {fleetTotalPages > 1 && (
@@ -87,10 +170,11 @@ export default function ProviderDashboard({ providerId, userProfile }) {
             )}
           </div>
         )}
-      </div>
+        </div>
+      </Section>
 
       {showAdd && <AddVehicleModal providerId={providerId} userProfile={userProfile} onClose={() => setShowAdd(false)} />}
-    </Section>
+    </div>
   );
 }
 
