@@ -31,6 +31,7 @@ export function useProviderVehicles(providerId) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset synchrone volontaire quand providerId disparaît
     if (!providerId) { setVehicles([]); setIsLoading(false); return; }
     const unsub = onSnapshot(
       query(collection(db, 'vehicles'), where('providerId', '==', providerId)),

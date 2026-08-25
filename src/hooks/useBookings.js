@@ -7,6 +7,7 @@ export function useRenterBookings(uid) {
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset synchrone volontaire quand uid disparaît
     if (!uid) { setBookings([]); setIsLoading(false); return; }
     const unsub = onSnapshot(
       query(collection(db, 'bookings'), where('renterId', '==', uid)),
@@ -22,6 +23,7 @@ export function useProviderBookings(providerId) {
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset synchrone volontaire quand providerId disparaît
     if (!providerId) { setBookings([]); setIsLoading(false); return; }
     const unsub = onSnapshot(
       query(collection(db, 'bookings'), where('providerId', '==', providerId)),

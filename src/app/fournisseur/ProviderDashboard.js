@@ -414,7 +414,7 @@ function AddVehicleModal({ providerId, userProfile, onClose }) {
               className={`rounded-2xl border-2 border-dashed p-5 text-center cursor-pointer transition ${dragActive ? 'border-primary bg-primary-soft' : 'border-border-c hover:border-primary/60 hover:bg-surface'}`}
             >
               <p className="text-sm font-semibold text-text">Glissez vos photos ici, ou cliquez pour choisir</p>
-              <p className="text-xs text-text-muted mt-1">JPG ou PNG · jusqu'à 6 photos</p>
+              <p className="text-xs text-text-muted mt-1">JPG ou PNG · jusqu&apos;à 6 photos</p>
               <input
                 ref={fileInputRef}
                 type="file"

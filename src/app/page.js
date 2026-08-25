@@ -30,10 +30,6 @@ export default function Home() {
     <div>
       {/* ─── Hero ─── */}
       <section className="relative overflow-hidden bg-text">
-        <div className="absolute inset-0">
-          <div className="absolute -top-24 -right-24 w-[520px] h-[520px] rounded-full bg-primary/30 blur-3xl animate-float" />
-          <div className="absolute top-1/2 -left-32 w-[420px] h-[420px] rounded-full bg-primary/20 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-        </div>
         <Section className="relative py-16 sm:py-24 lg:py-28">
           <div className="mx-auto max-w-7xl grid lg:grid-cols-2 gap-12 items-center">
             <div className="animate-fade-up">
@@ -76,8 +72,8 @@ export default function Home() {
                   className="object-cover"
                   priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                <div className="absolute bottom-5 left-5 right-5 bg-white/95 backdrop-blur rounded-2xl p-4 shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                <div className="absolute bottom-5 left-5 right-5 bg-white rounded-2xl p-4 shadow-lg">
                   <p className="text-xs font-semibold text-text-muted">Toyota RAV4 · Dakar</p>
                   <div className="flex items-baseline justify-between mt-1">
                     <p className="text-lg font-extrabold text-text">25 000 FCFA<span className="text-xs font-medium text-text-muted"> /jour</span></p>
@@ -165,11 +161,10 @@ export default function Home() {
 
       {/* ─── CTA proprietaire ─── */}
       <Section className="py-4 sm:py-8">
-        <div className="mx-auto max-w-7xl rounded-[2rem] bg-gradient-to-br from-primary to-primary-dark px-6 sm:px-14 py-14 sm:py-20 text-center relative overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/10 blur-2xl" />
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight relative">Un véhicule qui dort au garage ?</h2>
-          <p className="text-white/80 mt-3 max-w-lg mx-auto relative">Publiez-le sur WOTO et commencez à recevoir des demandes de location près de chez vous.</p>
-          <div className="mt-8 relative">
+        <div className="mx-auto max-w-7xl rounded-[2rem] bg-primary px-6 sm:px-14 py-14 sm:py-20 text-center">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">Un véhicule qui dort au garage ?</h2>
+          <p className="text-white/80 mt-3 max-w-lg mx-auto">Publiez-le sur WOTO et commencez à recevoir des demandes de location près de chez vous.</p>
+          <div className="mt-8">
             <Button href="/fournisseur" size="lg" variant="white">Publier mon véhicule</Button>
           </div>
         </div>
